@@ -1,0 +1,57 @@
+{
+  "name": "calendars-are-dumb",
+  "version": "0.1.0",
+  "description": "One merged view of your Google, Outlook and ICS calendars, plus booking links that check all of them. Self-hostable on Cloudflare Workers.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/swagsmindblowers/Calendars-are-dumb-opensource.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "private": true,
+  "scripts": {
+    "postinstall": "prisma generate && node scripts/patch-prisma-client.mjs",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:migrate:remote": "node scripts/db-migrate.mjs --remote",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.11.3",
+    "@fullcalendar/core": "^6.1.21",
+    "@fullcalendar/daygrid": "^6.1.21",
+    "@fullcalendar/list": "^6.1.21",
+    "@fullcalendar/react": "^6.1.21",
+    "@fullcalendar/timegrid": "^6.1.21",
+    "@prisma/adapter-d1": "^6.19.3",
+    "@prisma/client": "^6.19.3",
+    "luxon": "^3.7.2",
+    "next": "^16.4.3",
+    "next-auth": "^5.0.0-beta.32",
+    "node-ical": "^0.27.1",
+    "prisma": "^6.19.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261025.1",
+    "@opennextjs/cloudflare": "^1.20.13",
+    "@types/luxon": "^3.7.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
+    "eslint": "^9",
+    "eslint-config-next": "^16.4.3",
+    "typescript": "^5",
+    "wrangler": "^4.152.0"
+  }
+}

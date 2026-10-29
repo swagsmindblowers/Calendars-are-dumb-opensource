@@ -1,0 +1,233 @@
+// Prisma schema for Calendars-are-dumb
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client-js"
+  // "client" generates a pure-JS/wasm query compiler with NO native query
+  // engine binary at all, which is what @prisma/adapter-d1 needs on
+  // Cloudflare Workers. Without this, the generated client still ships a
+  // binary-engine code path (platform-specific, e.g. "windows" when
+  // generated on a Windows machine) that Workers can never satisfy.
+  engineType = "client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// --- Auth.js (NextAuth) models: https://authjs.dev/getting-started/adapters/prisma ---
+
+model User {
+  id              String           @id @default(cuid())
+  name            String?
+  email           String?          @unique
+  emailVerified   DateTime?
+  image           String?
+  // IANA timezone (e.g. "America/New_York") the booking page's availability
+  // windows are interpreted in. Set when the user first saves their hours.
+  timezone        String?
+  // Public, URL-safe handle: booking links are /book/<username>/<slug> so
+  // two different users' event types never collide. Auto-generated from
+  // the email's local part on first use (see ensureUsername), not
+  // user-chosen yet -- a settings page to change it is a later phase.
+  username        String?          @unique
+  // R2 object key for the uploaded booking-page logo (bucket: LOGOS
+  // binding). Null if no logo has been uploaded. Not a public URL --
+  // served via /api/logo/[username].
+  logoKey         String?
+  // MIME type of the stored logo object, needed to set Content-Type when
+  // serving it back out. Always set together with logoKey.
+  logoContentType String?
+  // Hex color (e.g. "#4f46e5") applied as --accent on the user's public
+  // pages. Null falls back to the app default from globals.css.
+  accentColor     String?
+  accounts        Account[]
+  sessions        Session[]
+  calendarSources CalendarSource[]
+  eventTypes      EventType[]
+  availability    Availability[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  // The account's email, so the Sources page can show which of several
+  // same-provider accounts a calendar source belongs to. Populated by the
+  // "connect another account" flow (src/app/api/connect/[provider]); null
+  // for accounts linked via the original sign-in flow.
+  email             String?
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- App models ---
+
+enum CalendarSourceType {
+  GOOGLE
+  MICROSOFT
+  ICS
+}
+
+model CalendarSource {
+  id     String             @id @default(cuid())
+  userId String
+  user   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   CalendarSourceType
+  label  String
+  color  String             @default("#6366f1")
+
+  // OAuth sources (GOOGLE / MICROSOFT): the provider account tokens live on
+  // Account (above); this just records which calendar of that account to sync.
+  providerAccountId String?
+  externalCalendarId String?
+
+  // ICS sources: a subscribed feed URL, or a one-time uploaded .ics file's raw contents.
+  icsUrl String?
+
+  // At most one source (always MICROSOFT for now) is the booking target:
+  // confirmed bookings create a real event here. Enforced in application
+  // code, not the schema.
+  isBookingTarget Boolean @default(false)
+
+  lastSyncedAt  DateTime?
+  lastSyncError String?
+
+  events    Event[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id          String         @id @default(cuid())
+  sourceId    String
+  source      CalendarSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  externalId  String // uid/id from the provider, used to dedupe on resync
+  title       String
+  description String?
+  location    String?
+  start       DateTime
+  end         DateTime
+  allDay      Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([sourceId, externalId])
+  @@index([start, end])
+}
+
+// --- Booking ---
+
+model EventType {
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug                String
+  name                String
+  description         String?
+  durationMinutes     Int
+  bufferBeforeMinutes Int       @default(0)
+  bufferAfterMinutes  Int       @default(0)
+  active              Boolean   @default(true)
+  bookings            Booking[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([userId, slug])
+}
+
+model Availability {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek Int // 0 (Sunday) - 6 (Saturday)
+  startTime String // "HH:mm", interpreted in User.timezone
+  endTime   String // "HH:mm"
+
+  @@index([userId, dayOfWeek])
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  eventTypeId     String
+  eventType       EventType     @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  bookerName      String
+  bookerEmail     String
+  bookerTimezone  String
+  start           DateTime
+  end             DateTime
+  status          BookingStatus @default(CONFIRMED)
+  notes           String?
+  // The Microsoft Graph event id/join link created for this booking, so it
+  // can be looked up or cancelled later.
+  externalEventId String?
+  joinUrl         String?
+  // Resend's id for the scheduled "starting soon" reminder email, so it can
+  // be rescheduled (PATCH) on reschedule or cancelled if the booking is
+  // cancelled or moved too close to send time. Null if none is scheduled
+  // (e.g. the booking was made less than the reminder lead time out).
+  reminderEmailId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([eventTypeId, start, end])
+}
+
+enum AuditAction {
+  BOOKING_CREATED
+  BOOKING_CANCELLED
+  BOOKING_RESCHEDULED
+  SIGN_IN
+  RATE_LIMITED
+}
+
+// Deliberately not related to Booking/User via @relation -- an audit
+// trail should survive independent of how the live data model evolves.
+// bookingId/userId/actorEmail are nullable because not every logged
+// action has all three -- a rate-limit hit on a public endpoint has no
+// session (no userId/actorEmail), and a sign-in event has no booking.
+model AuditLog {
+  id         String      @id @default(cuid())
+  action     AuditAction
+  bookingId  String?
+  userId     String? // the signed-in user or calendar owner, for per-user queries
+  actorEmail String? // the booker's or signed-in user's email, when known
+  detail     String? // short human-readable context, e.g. the old -> new time on a reschedule
+  createdAt  DateTime    @default(now())
+
+  @@index([userId, createdAt])
+  @@index([bookingId])
+}

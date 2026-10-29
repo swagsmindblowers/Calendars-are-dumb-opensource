@@ -1,0 +1,58 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"main": ".open-next/worker.js",
+	"name": "calendars-are-dumb",
+	"compatibility_date": "2026-10-25",
+	"compatibility_flags": ["nodejs_compat"],
+	// The OpenNext bundle's sourcemap exceeds Cloudflare's 60 MiB upload cap
+	// (needed for mapping stack traces back to source, not for the Worker to
+	// run) — disable the upload rather than fight the bundle size.
+	"upload_source_maps": false,
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	// To serve from your own domain instead of <name>.<subdomain>.workers.dev,
+	// add (and make sure the domain is on your Cloudflare account):
+	//   "routes": [{ "pattern": "cal.example.com", "custom_domain": true }],
+	"vars": {
+		// Public URL of your deployment. Used for OAuth redirects, links in
+		// emails, and the host shown on public pages. Change this when you deploy.
+		"APP_URL": "http://localhost:3000"
+		// Optional: shown on the privacy/terms pages and in the footer.
+		// ,"CONTACT_EMAIL": "you@example.com"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			// Replace database_id with the id printed by
+			// `npx wrangler d1 create calendars-are-dumb`. The placeholder is
+			// fine for local dev/preview: Wrangler keeps local state separate
+			// regardless of the id. See the README.
+			"database_name": "calendars-are-dumb",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "migrations"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "LOGOS",
+			"bucket_name": "calendars-are-dumb-logos"
+		}
+	],
+	"observability": {
+		"enabled": true
+	},
+	"ratelimits": [
+		{
+			"name": "BOOKING_READ_LIMITER",
+			"namespace_id": "1",
+			"simple": { "limit": 30, "period": 60 }
+		},
+		{
+			"name": "BOOKING_WRITE_LIMITER",
+			"namespace_id": "2",
+			"simple": { "limit": 5, "period": 60 }
+		}
+	]
+}
