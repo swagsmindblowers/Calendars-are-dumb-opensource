@@ -16,7 +16,7 @@ export default function PrivacyPage() {
       <div className="public">
         <div className="public-brandbar">
           <Link href="/" className="brand-link">
-            ← Calendars are dumb
+            ← {site.name}
           </Link>
         </div>
         <div className="prose stack">
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
             <p className="muted">
               Last updated October 28, 2026.
               This page covers both our privacy practices and our cookie use
-              for {site.host} (&quot;Calendars are dumb&quot;).
+              for {site.host} (&quot;{site.name}&quot;).
             </p>
           </div>
 

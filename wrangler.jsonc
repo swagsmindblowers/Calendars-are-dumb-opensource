@@ -19,7 +19,9 @@
 		// Public URL of your deployment. Used for OAuth redirects, links in
 		// emails, and the host shown on public pages. Change this when you deploy.
 		"APP_URL": "http://localhost:3000"
-		// Optional: shown on the privacy/terms pages and in the footer.
+		// Optional: your product name and a contact address, shown on the
+		// about/privacy/terms pages and in the footer.
+		// ,"SITE_NAME": "My Calendar"
 		// ,"CONTACT_EMAIL": "you@example.com"
 	},
 	"d1_databases": [

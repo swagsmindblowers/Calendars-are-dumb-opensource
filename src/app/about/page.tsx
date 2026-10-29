@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
+import { getSite } from "@/lib/site";
 
 // Reads APP_URL / CONTACT_EMAIL at request time (see lib/site.ts).
 export const dynamic = "force-dynamic";
@@ -9,12 +10,13 @@ export const metadata = {
 };
 
 export default function AboutPage() {
+  const site = getSite();
   return (
     <>
       <div className="public">
         <div className="public-brandbar">
           <Link href="/" className="brand-link">
-            ← Calendars are dumb
+            ← {site.name}
           </Link>
         </div>
         <div className="prose stack">
@@ -49,7 +51,7 @@ export default function AboutPage() {
             <ul className="muted" style={{ paddingLeft: 20, margin: 0 }}>
               <li>
                 <strong>Most booking tools check one calendar.</strong>{" "}
-                Calendars are dumb merges every calendar you connect --
+                {site.name} merges every calendar you connect --
                 Google, Microsoft, or any private ICS feed -- into one
                 availability picture, so a booking link actually reflects
                 everywhere you might already be busy.

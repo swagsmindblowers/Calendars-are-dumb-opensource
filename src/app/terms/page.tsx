@@ -16,7 +16,7 @@ export default function TermsPage() {
       <div className="public">
         <div className="public-brandbar">
           <Link href="/" className="brand-link">
-            ← Calendars are dumb
+            ← {site.name}
           </Link>
         </div>
         <div className="prose stack">
@@ -24,7 +24,7 @@ export default function TermsPage() {
             <h1 style={{ fontSize: "var(--t-2xl)" }}>Terms of service</h1>
             <p className="muted">
               Last updated October 28, 2026.
-              By using {site.host} (&quot;Calendars are dumb&quot;), you agree
+              By using {site.host} (&quot;{site.name}&quot;), you agree
               to these terms.
             </p>
           </div>
@@ -32,7 +32,7 @@ export default function TermsPage() {
           <div className="stack" style={{ gap: 8 }}>
             <h2>What this is</h2>
             <p className="muted">
-              Calendars are dumb merges your connected calendars (Google,
+              {site.name} merges your connected calendars (Google,
               Microsoft, or any private ICS feed) into one view, and lets you
               offer a public booking page so other people can schedule time
               with you. A confirmed booking may create a real calendar event

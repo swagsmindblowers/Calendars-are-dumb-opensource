@@ -30,12 +30,10 @@ git clone https://github.com/swagsmindblowers/Calendars-are-dumb-opensource.git
 cd Calendars-are-dumb-opensource
 npm install
 
-cp .env.example .env
-# Edit .env:
-#   AUTH_SECRET            -> run: npx auth secret   (or any long random string)
-#   TOKEN_ENCRYPTION_KEY   -> run: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-#   AUTH_DEV_BYPASS="true" -> adds a "Continue as dev user" button so you can
-#                             try the app without registering OAuth apps
+npm run setup           # creates .env and generates AUTH_SECRET + TOKEN_ENCRYPTION_KEY
+
+# Optional: edit .env and set AUTH_DEV_BYPASS="true" to get a "Continue as dev
+# user" button, so you can try the app without registering any OAuth apps.
 
 npm run db:migrate      # creates the local D1 database
 npm run cf:preview      # builds, then serves at http://localhost:8787
@@ -133,6 +131,7 @@ The first of each pair is for signing in; the second is for connecting
 | `AUTH_MICROSOFT_ENTRA_ID_ID` / `_SECRET` | for Microsoft | OAuth client. |
 | `RESEND_API_KEY` | no | Without it, emails are skipped and logged. |
 | `RESEND_FROM_EMAIL` | no | Sender; must be a domain verified with Resend. |
+| `SITE_NAME` | no | Your product name on about/privacy/terms and the footer. |
 | `CONTACT_EMAIL` | no | Shown in the footer and on the privacy/terms pages. |
 | `AUTH_DEV_BYPASS` | no | **Local only.** Passwordless dev sign-in. |
 
@@ -179,7 +178,7 @@ src/lib/sync/       Google / Microsoft / ICS fetching
 src/lib/booking/    Availability maths and booking actions
 src/lib/oauth/      Provider config for connecting extra accounts
 prisma/             Schema and SQL migrations
-scripts/            db-migrate.mjs, Prisma client patch for Workers
+scripts/            setup.mjs (first-run secrets), db-migrate.mjs, Prisma client patch for Workers
 wrangler.jsonc      Cloudflare bindings and vars
 ```
 
